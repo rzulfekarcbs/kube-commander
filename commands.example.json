@@ -1,0 +1,38 @@
+{
+  "profile": "your-aws-profile",
+  "stage": "prod",
+  "account": "000000000000",
+  "cluster": "your-cluster-name",
+  "region": "us-east-1",
+  "kubectlPath": "C:\\path\\to\\kubectl.exe",
+  "commands": [
+    {
+      "id": "scale-down-all",
+      "label": "Scale DOWN All Services",
+      "commands": [
+        "kubectl scale deploy your-deployment --namespace your-namespace --replicas=0"
+      ],
+      "description": "Scale all services to 0 replicas",
+      "variant": "danger"
+    },
+    {
+      "id": "scale-up-all",
+      "label": "Scale UP All Services",
+      "commands": [
+        "kubectl scale deploy your-deployment --namespace your-namespace --replicas=1"
+      ],
+      "description": "Scale all services to 1 replica",
+      "variant": "success"
+    },
+    {
+      "id": "restart-services",
+      "label": "Restart Services",
+      "commands": [
+        "python kickall.py prod your-profile"
+      ],
+      "cwd": "C:\\path\\to\\your\\scripts",
+      "description": "Restart all services via kickall.py",
+      "variant": "danger"
+    }
+  ]
+}

@@ -5,7 +5,36 @@
   "cluster": "your-cluster-name",
   "region": "us-east-1",
   "kubectlPath": "C:\\path\\to\\kubectl.exe",
+  "mediator": {
+    "namespace": "go",
+    "username": "your-mediator-username",
+    "password": "your-mediator-password",
+    "instances": [
+      {
+        "name": "us2",
+        "wsUrl": "ws://your-mediator-nlb.elb.us-east-1.amazonaws.com/mediator/wsws",
+        "syncUrl": "http://your-mediator-nlb.elb.us-east-1.amazonaws.com/api/playlist-sync-manager/v1/groups",
+        "secretId": "/bsd/prod/go/tx/us2",
+        "tokensPod": "txtokensus2",
+        "syncDeployment": "txsync2"
+      }
+    ]
+  },
   "commands": [
+    {
+      "id": "refresh-token-us2",
+      "type": "mediator-token-refresh",
+      "mediatorInstance": "us2",
+      "label": "Refresh Mediator Token (US2)",
+      "description": "Get fresh token from Mediator US2, update secret, restart sync",
+      "steps": [
+        "1. Find running txtokensus2 pod",
+        "2. WebSocket login to Mediator → get session key",
+        "3. Update syncToken in Secrets Manager",
+        "4. Restart sync deployment"
+      ],
+      "variant": "success"
+    },
     {
       "id": "scale-down-all",
       "label": "Scale DOWN All Services",

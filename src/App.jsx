@@ -22,18 +22,25 @@ function StatusBadge({ authenticated }) {
 function CommandCard({ command, onExecute, running, disabled }) {
   const isDanger = command.variant === 'danger';
   const isSuccess = command.variant === 'success';
+  const isMediator = command.type === 'mediator-token-refresh';
 
-  const buttonClass = isDanger
-    ? 'bg-red-600 hover:bg-red-500 disabled:bg-red-900/30 disabled:text-red-800'
-    : isSuccess
-      ? 'bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-900/30 disabled:text-emerald-800'
-      : 'bg-blue-600 hover:bg-blue-500 disabled:bg-blue-900/30 disabled:text-blue-800';
+  const buttonClass = isMediator
+    ? 'bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-900/30 disabled:text-cyan-800'
+    : isDanger
+      ? 'bg-red-600 hover:bg-red-500 disabled:bg-red-900/30 disabled:text-red-800'
+      : isSuccess
+        ? 'bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-900/30 disabled:text-emerald-800'
+        : 'bg-blue-600 hover:bg-blue-500 disabled:bg-blue-900/30 disabled:text-blue-800';
 
-  const borderClass = isDanger
-    ? 'border-red-500/20'
-    : isSuccess
-      ? 'border-emerald-500/20'
-      : 'border-blue-500/20';
+  const borderClass = isMediator
+    ? 'border-cyan-500/20'
+    : isDanger
+      ? 'border-red-500/20'
+      : isSuccess
+        ? 'border-emerald-500/20'
+        : 'border-blue-500/20';
+
+  const displayItems = command.steps || command.commands || [command.command];
 
   return (
     <div
@@ -44,14 +51,16 @@ function CommandCard({ command, onExecute, running, disabled }) {
           <h3 className="text-white font-semibold text-sm">{command.label}</h3>
           <p className="text-slate-400 text-xs mt-1">{command.description}</p>
         </div>
-        {isDanger ? (
+        {isMediator ? (
+          <span className="text-cyan-400 text-lg" title="Mediator Token Refresh">&#128272;</span>
+        ) : isDanger ? (
           <span className="text-red-400 text-lg">&#9660;</span>
         ) : (
           <span className="text-emerald-400 text-lg">&#9650;</span>
         )}
       </div>
-      <div className="text-[11px] text-slate-500 bg-slate-900/60 rounded-lg px-3 py-2 font-mono space-y-0.5 max-h-32 overflow-y-auto">
-        {(command.commands || [command.command]).map((c, i) => (
+      <div className={`text-[11px] ${isMediator ? 'text-cyan-600' : 'text-slate-500'} bg-slate-900/60 rounded-lg px-3 py-2 font-mono space-y-0.5 max-h-32 overflow-y-auto`}>
+        {displayItems.map((c, i) => (
           <div key={i} className="break-all">{c}</div>
         ))}
       </div>
@@ -65,6 +74,8 @@ function CommandCard({ command, onExecute, running, disabled }) {
             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             Running...
           </>
+        ) : isMediator ? (
+          'Refresh Token'
         ) : (
           'Execute'
         )}

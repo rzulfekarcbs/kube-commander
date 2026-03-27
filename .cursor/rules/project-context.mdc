@@ -1,0 +1,63 @@
+---
+description: Kube Commander project context, architecture, and background on the Mediator token refresh feature
+alwaysApply: true
+---
+
+# Kube Commander — Project Context
+
+## What This App Does
+
+Kube Commander is an Electron + React desktop app for managing Kubernetes deployments on the **bsd-go** EKS cluster. It provides button-driven operations (scale up/down, restart, token refresh) so operators don't need to remember CLI commands.
+
+## Target Environment
+
+- **EKS cluster**: `bsd-go-prod` in AWS account `695023514840`
+- **AWS profile**: `shared-service-prod` (authenticates via `gimme-aws-creds` with Okta MFA)
+- **Kubernetes namespace**: `go`
+- **kubectl**: custom binary at `C:\projects\bsd-go-cluster\kubectl.exe`
+
+## The Mediator Token Refresh Feature
+
+### Why It Exists
+
+The playlist sync service (`bsd-go-tx-sync`) polls the Evertz Mediator API every 10 seconds using a `syncToken` stored in AWS Secrets Manager. The token expires and the sync service **never refreshes it** — it reads once at startup. The companion service `bsd-go-mediator-tokens` was designed to auto-refresh but was never fully wired up (the `PlaylistApi` WebSocket client is never instantiated in `service.ts`). This means tokens must be refreshed manually.
+
+### How It Works
+
+1. Finds a running `txtokensus2` pod (filters out Terminating pods by checking `deletionTimestamp`)
+2. Pipes a Node.js WebSocket login script into the pod via `kubectl exec -i` (the pod has `ws` module installed)
+3. The script connects to the Mediator NLB, sends a login command with `GlobalOverview` credentials, and returns a fresh session key
+4. In live mode: updates the secret in Secrets Manager and restarts the `txsync2` deployment
+
+### Important Implementation Details
+
+- `kubectl exec` must use `shell: false` in Electron's `spawn()` — using `shell: true` on Windows wraps the command in `cmd.exe` which swallows stdin, causing the piped script to never reach the pod
+- Pod discovery must filter out pods with `metadata.deletionTimestamp` (Terminating pods) — Kubernetes reports them as `phase: Running` but they're on dead nodes and cause `kubectl exec` to hang
+- The 30-second timeout on `execScriptInPod` prevents the app from hanging when a node is unreachable
+- Temp files for secret updates are written to `os.tmpdir()` and cleaned up immediately after use
+- `AWS_PROFILE` must be passed explicitly to spawned processes
+
+## Related Repositories
+
+| Repo | Local Path | Purpose |
+|------|-----------|---------|
+| `bsd-go-tx-sync` | `C:\projects\bsd-go-tx-sync` | Playlist sync service (reads token once at startup, polls Mediator every 10s) |
+| `bsd-go-mediator-tokens` | `C:\projects\bsd-go-mediator-tokens` | Token service (should auto-refresh but doesn't — `PlaylistApi` not wired in `service.ts`) |
+| `bsd-go-config` | `C:\projects\bsd-go-config` | Channel/group config seed service (no tokens) |
+| `bsd-go-cluster` | `C:\projects\bsd-go-cluster` | EKS cluster infra + kubectl binary |
+| `vcap-platform-applications` | — | Monorepo with `linear-console-api` (Grass Valley token management, separate from Mediator tokens) |
+
+## Secrets in AWS Secrets Manager (us-east-1)
+
+| Secret | Endpoint | Status |
+|--------|----------|--------|
+| `/bsd/prod/go/tx/us2` | New NLB (working) | Active — refreshed by this app |
+| `/bsd/prod/go/tx/eu2` | New NLB | Token updated but no pod reads it |
+| `/bsd/prod/go/tx/us` | Old dead ELB | Broken — ELB decommissioned |
+| `/bsd/prod/go/tx/eu` | Old dead ELB | Broken — ELB decommissioned |
+
+## Permanent Fix Needed
+
+The current approach is a band-aid. The proper fix requires:
+1. Wire up `PlaylistApi` in `bsd-go-mediator-tokens/src/app/service.ts` to actually connect, get tokens, and write them to Secrets Manager periodically
+2. Update `bsd-go-tx-sync` to periodically re-read the token from Secrets Manager instead of caching once at startup

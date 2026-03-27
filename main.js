@@ -424,8 +424,16 @@ ipcMain.handle('run-command', async (_event, commandId, dryRun) => {
       binary = config.kubectlPath;
     }
 
-    if (dryRun && (binary === 'kubectl' || binary === config.kubectlPath)) {
-      args.push('--dry-run=client');
+    const isKubectl = binary === 'kubectl' || binary === config.kubectlPath;
+
+    if (dryRun && isKubectl) {
+      args.push('--dry-run=server');
+    }
+
+    if (dryRun && !isKubectl) {
+      sendOutput('command-output', `\n[${i + 1}/${cmdList.length}] [SKIPPED] ${cmdList[i]}\n`);
+      sendOutput('command-output', `(non-kubectl commands are skipped in dry-run mode)\n`);
+      continue;
     }
 
     sendOutput('command-output', `\n[${i + 1}/${cmdList.length}] `);

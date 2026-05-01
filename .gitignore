@@ -1,3 +1,4 @@
 node_modules/
 dist/
 commands.json
+eks-console-pod-access-fix.md

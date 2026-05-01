@@ -221,7 +221,8 @@ All operational settings live in `commands.json`. This file is git-ignored to ke
 
 | Field         | Description                                      |
 |---------------|--------------------------------------------------|
-| `profile`     | AWS profile name for `gimme-aws-creds`           |
+| `profile`     | AWS profile used for `kubectl` and `aws` calls (the profile in `~/.aws/credentials` that holds the active keys) |
+| `authProfile` | Optional. Profile name passed to `gimme-aws-creds --profile` (your Okta config profile). Defaults to `profile` if omitted. Use this when `gimme-aws-creds` writes credentials under a different name (e.g. `default`) than your Okta config profile. |
 | `stage`       | Environment stage (e.g. `prod`, `staging`)       |
 | `account`     | AWS account ID                                   |
 | `cluster`     | Kubernetes cluster name                          |

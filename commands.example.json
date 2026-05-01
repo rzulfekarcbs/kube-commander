@@ -1,5 +1,6 @@
 {
   "profile": "your-aws-profile",
+  "authProfile": "your-okta-aws-creds-profile",
   "stage": "prod",
   "account": "000000000000",
   "cluster": "your-cluster-name",

@@ -379,13 +379,14 @@ ipcMain.handle('get-commands', () => {
 ipcMain.handle('authenticate', async () => {
   const config = loadCommands();
   const { profile, account } = config;
+  const authProfile = config.authProfile || profile;
   const rolePattern = `/:${account}:/`;
 
-  sendOutput('command-output', `Authenticating to AWS (profile: ${profile}, account: ${account})...\n`);
+  sendOutput('command-output', `Authenticating to AWS (okta profile: ${authProfile}, account: ${account})...\n`);
 
   const authCode = await runCommand(
     'gimme-aws-creds',
-    ['--profile', profile, '--roles', rolePattern],
+    ['--profile', authProfile, '--roles', rolePattern],
     'command-output'
   );
   if (authCode !== 0) {
